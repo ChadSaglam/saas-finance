@@ -72,7 +72,6 @@ const LineItemsEditor: React.FC<LineItemsEditorProps> = ({
             onDeleteItem={handleDeleteItem}
             showActions={true}
           />
-          
           <div className="mt-4">
             <Button 
               variant="outline" 

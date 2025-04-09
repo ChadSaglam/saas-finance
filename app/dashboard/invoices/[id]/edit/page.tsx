@@ -7,7 +7,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/TextArea';
-import Label from '@/components/ui/Label';
+import Select from '@/components/ui/Select';
 import { dummyInvoices } from '@/lib/dummy-data/invoices';
 import { dummyClients } from '@/lib/dummy-data/clients';
 import { usePageParams } from '@/lib/hooks/usePageParams';
@@ -90,7 +90,6 @@ export default function EditInvoicePage() {
     }
   };
   
-  // Initialize form state
   const [formState, dispatch] = useReducer(formReducer, {
     invoiceNumber: existingInvoice.invoiceNumber,
     selectedClientId: clientId,
@@ -102,7 +101,6 @@ export default function EditInvoicePage() {
     taxRate: existingInvoice.taxRate
   });
   
-  // Memoize totals calculation for better performance
   const totals = useMemo(() => {
     const subtotal = formState.items.reduce((sum, item) => sum + item.total, 0);
     const taxAmount = subtotal * (formState.taxRate / 100);
@@ -111,16 +109,13 @@ export default function EditInvoicePage() {
     return { subtotal, taxAmount, total };
   }, [formState.items, formState.taxRate]);
   
-  // Update due date when issue date changes (memoized)
   const handleIssueDateChange = useCallback((date: string) => {
     const newIssueDate = new Date(date);
     dispatch({ type: 'SET_ISSUE_DATE', payload: newIssueDate });
     
-    // Auto-update due date to issue date + 14 days
     dispatch({ type: 'SET_DUE_DATE', payload: addDays(newIssueDate, 14) });
   }, []);
   
-  // Handle form submission with optimized approach
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     
@@ -143,11 +138,27 @@ export default function EditInvoicePage() {
     };
     
     console.log('Saving invoice:', updatedInvoice);
-    // In a real app, you would save this to your database
-    
-    // Navigate back to the invoice detail page
+
     router.push(`/dashboard/invoices/${id}`);
   }, [existingInvoice, formState, totals, router, id]);
+
+  // Options for the status dropdown
+  const statusOptions = [
+    { value: 'draft', label: 'Draft' },
+    { value: 'sent', label: 'Sent' },
+    { value: 'paid', label: 'Paid' },
+    { value: 'overdue', label: 'Overdue' },
+    { value: 'cancelled', label: 'Cancelled' }
+  ];
+
+  // Options for the client dropdown
+  const clientOptions = [
+    { value: '', label: 'Select Client' },
+    ...dummyClients.map(client => ({ 
+      value: client.id, 
+      label: client.name 
+    }))
+  ];
 
   return (
     <div>
@@ -178,45 +189,30 @@ export default function EditInvoicePage() {
                 required
               />
               
-              <div className="mb-4">
-                <Label text="Status" htmlFor="status" />
-                <select
-                  id="status"
-                  value={formState.status}
-                  onChange={(e) => dispatch({
-                    type: 'SET_STATUS',
-                    payload: e.target.value as Invoice['status']
-                  })}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="sent">Sent</option>
-                  <option value="paid">Paid</option>
-                  <option value="overdue">Overdue</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
+              <Select
+                label="Status"
+                id="status"
+                value={formState.status}
+                options={statusOptions}
+                onChange={(e) => dispatch({
+                  type: 'SET_STATUS',
+                  payload: e.target.value as Invoice['status']
+                })}
+                helpText="Current invoice status"
+              />
               
-              <div className="mb-4">
-                <Label text="Client" htmlFor="client" />
-                <select
-                  id="client"
-                  value={formState.selectedClientId}
-                  onChange={(e) => dispatch({
-                    type: 'SET_CLIENT',
-                    payload: e.target.value
-                  })}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                >
-                  <option value="">Select Client</option>
-                  {dummyClients.map((client) => (
-                    <option key={client.id} value={client.id}>
-                      {client.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Client"
+                id="client"
+                value={formState.selectedClientId}
+                options={clientOptions}
+                onChange={(e) => dispatch({
+                  type: 'SET_CLIENT',
+                  payload: e.target.value
+                })}
+                required
+                error={formState.selectedClientId ? '' : 'Please select a client'}
+              />
               
               <Input
                 type="date"
@@ -250,6 +246,7 @@ export default function EditInvoicePage() {
                 })}
                 step="0.01"
                 min="0"
+                helpText="Applied to subtotal"
               />
             </div>
             

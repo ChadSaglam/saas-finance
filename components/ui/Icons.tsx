@@ -261,3 +261,37 @@ export const ExpandIcon: React.FC<IconProps> = ({ className = '', ...props }) =>
     </svg>
   );
 };
+
+export const ZoomInIcon: React.FC<IconProps> = ({ className = '', ...props }) => {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}>
+      <path d="M5 8a3 3 0 116 0 3 3 0 01-6 0zm6.32 4.406l3.98 3.98a1 1 0 001.415-1.414l-3.98-3.98A5 5 0 118 3a5 5 0 014.32 7.406z" />
+      <path d="M8 6a.75.75 0 01.75.75v1.5h1.5a.75.75 0 010 1.5h-1.5v1.5a.75.75 0 01-1.5 0v-1.5h-1.5a.75.75 0 010-1.5h1.5v-1.5A.75.75 0 018 6z" />
+    </svg>
+  );
+};
+
+export const ZoomOutIcon: React.FC<IconProps> = ({ className = '', ...props }) => {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}>
+      <path d="M5 8a3 3 0 116 0 3 3 0 01-6 0zm6.32 4.406l3.98 3.98a1 1 0 001.415-1.414l-3.98-3.98A5 5 0 118 3a5 5 0 014.32 7.406z" />
+      <path d="M5.25 7.25a.75.75 0 000 1.5h5.5a.75.75 0 000-1.5h-5.5z" />
+    </svg>
+  );
+};
+
+export const ChevronLeftIcon: React.FC<IconProps> = ({ className = '', ...props }) => {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}>
+      <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+    </svg>
+  );
+};
+
+export const ChevronRightIcon: React.FC<IconProps> = ({ className = '', ...props }) => {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}>
+      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+    </svg>
+  );
+};

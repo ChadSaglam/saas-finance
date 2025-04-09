@@ -3,7 +3,7 @@ import { PDFDownloadLink } from '@react-pdf/renderer';
 import Button from '@/components/ui/Button';
 import { PDFDocumentElement } from '@/lib/types/pdf';
 
-interface QuickViewPDFProps {
+interface DownloadPDFProps {
   document: PDFDocumentElement;
   fileName: string;
   buttonText?: string;
@@ -12,7 +12,7 @@ interface QuickViewPDFProps {
   variant?: 'primary' | 'secondary' | 'outline' | 'danger';
 }
 
-const QuickViewPDF: React.FC<QuickViewPDFProps> = ({
+const DownloadPDF: React.FC<DownloadPDFProps> = ({
   document,
   fileName,
   buttonText = "Download",
@@ -42,4 +42,4 @@ const QuickViewPDF: React.FC<QuickViewPDFProps> = ({
   );
 };
 
-export default QuickViewPDF;
+export default DownloadPDF;

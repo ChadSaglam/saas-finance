@@ -11,7 +11,7 @@ import { formatDisplayDate } from '@/lib/utils/format';
 import { usePageParams } from '@/lib/hooks/usePageParams';
 import OfferPDFDocument from '@/components/pdf/OfferPDFDocument';
 import { downloadPDF, saveOfferPDF } from '@/lib/utils/pdf-service';
-import QuickViewPDF from '@/components/pdf/QuickViewPDF';
+import QuickViewPDF from '@/components/pdf/DownloadPDF';
 import PrintButton from '@/components/pdf/PrintButton';
 import PDFPreviewDialog from '@/components/pdf/PDFPreviewDialog';
 import { useCompanySettings } from '@/lib/contexts/CompanySettings';

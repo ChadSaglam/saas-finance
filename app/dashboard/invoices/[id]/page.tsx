@@ -13,27 +13,20 @@ import { dummyInvoices } from '@/lib/dummy-data/invoices';
 import { usePageParams } from '@/lib/hooks/usePageParams';
 import InvoicePDFDocument from '@/components/pdf/InvoicePDFDocument';
 import { downloadPDF, saveInvoicePDF } from '@/lib/utils/pdf-service';
-import QuickViewPDF from '@/components/pdf/QuickViewPDF';
+import DownloadPDF from '@/components/pdf/DownloadPDF';
 import PrintButton from '@/components/pdf/PrintButton';
 import SendInvoiceDialog from '@/components/invoices/SendInvoiceDialog';
 import PDFPreviewDialog from '@/components/pdf/PDFPreviewDialog';
 import { useCompanySettings } from '@/lib/contexts/CompanySettings';
 import { Invoice } from '@/lib/models';
 import { 
-  EnvelopeIcon, 
-  DocumentIcon, 
+  EnvelopeIcon,
   PrinterIcon, 
   PencilIcon, 
   DownloadIcon,
   EyeIcon
 } from '@/components/ui/Icons';
 
-/**
- * InvoiceDetailPage - View and manage a specific invoice
- * 
- * Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-04-09 12:21:53
- * Current User's Login: ChadSaglam
- */
 export default function InvoiceDetailPage() {
   const params = usePageParams();
   const id = params.id;
@@ -188,7 +181,7 @@ export default function InvoiceDetailPage() {
             <EyeIcon className="h-5 w-5 mr-1" />
             Preview PDF
           </Button>
-          <QuickViewPDF 
+          <DownloadPDF 
             document={<InvoicePDFDocument invoice={invoice} companyInfo={companySettings} />}
             fileName={fileName}
             buttonText="Download"
@@ -319,16 +312,6 @@ export default function InvoiceDetailPage() {
                     Mark as Paid
                   </Button>
                 )}
-                <Button 
-                  variant="outline" 
-                  onClick={handleDownloadPDF}
-                  isLoading={isGenerating}
-                  loadingText="Generating PDF..."
-                  fullWidth
-                >
-                  <DocumentIcon className="h-5 w-5 mr-1" />
-                  Download PDF
-                </Button>
                 {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
                   <Button 
                     variant="danger" 
