@@ -210,22 +210,22 @@ export default function OfferDetailPage() {
             <h3 className="text-sm font-medium text-gray-900 mb-4">Actions</h3>
             <div className="space-y-2">
               {status === 'draft' && (
-                <Button variant="primary" fullWidth>Send to Client</Button>
+                <Button variant="primary" >Send to Client</Button>
               )}
               {status === 'sent' && (
                 <>
-                  <Button variant="primary" fullWidth>Mark as Accepted</Button>
-                  <Button variant="danger" fullWidth>Mark as Rejected</Button>
+                  <Button variant="primary" >Mark as Accepted</Button>
+                  <Button variant="danger" >Mark as Rejected</Button>
                 </>
               )}
               {canConvertToInvoice && (
                 <Link href={`/dashboard/invoices/create?fromOffer=${offer.id}`}>
-                  <Button variant="primary" fullWidth>Convert to Invoice</Button>
+                  <Button variant="primary" >Convert to Invoice</Button>
                 </Link>
               )}
-              <Button variant="outline" fullWidth>Download PDF</Button>
+              <Button variant="outline" >Download PDF</Button>
               {status !== 'accepted' && status !== 'rejected' && status !== 'expired' && (
-                <Button variant="danger" fullWidth>Cancel Offer</Button>
+                <Button variant="danger" >Cancel Offer</Button>
               )}
             </div>
           </div>

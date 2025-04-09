@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { CatalogItem, LineItem } from '@/lib/models';
-import { dummyCatalogItems } from '@/lib/dummy-data/catalog-items';
+import { dummyCatalogItems } from '@/lib/dummy-data/catalog';
 import { CODE_CATEGORIES } from '@/lib/utils/product-codes';
 import { formatCurrency } from '@/lib/utils/format';
 import Modal from '@/components/ui/Modal';

@@ -16,6 +16,7 @@ import PrintButton from '@/components/pdf/PrintButton';
 import SendInvoiceDialog from '@/components/invoices/SendInvoiceDialog';
 import PDFPreviewDialog from '@/components/pdf/PDFPreviewDialog';
 import { useCompanySettings } from '@/lib/contexts/CompanySettings';
+import { Invoice, Client } from '@/lib/models';
 
 export default function InvoiceDetailPage() {
   const params = usePageParams();
@@ -81,11 +82,12 @@ export default function InvoiceDetailPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Invoice #{invoice.invoiceNumber}</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900 mb-4 sm:mb-0">Invoice #{invoice.invoiceNumber}</h1>
         <div className="flex flex-wrap gap-2">
           <Button 
             onClick={() => setShowSendDialog(true)}
+            variant="primary"
           >
             Send to Client
           </Button>
@@ -100,14 +102,28 @@ export default function InvoiceDetailPage() {
             fileName={getFileName()}
             buttonText="Quick Download"
           />
+          <Link href={`/dashboard/invoices/${invoice.id}/edit`}>
+            <Button variant="outline">Edit Invoice</Button>
+          </Link>
+        </div>
+      </div>
+      
+      {/* Status Bar */}
+      <div className="bg-white shadow-sm border border-gray-200 rounded-md p-4 mb-6">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status as keyof typeof statusColors]}`}>
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </span>
+            <span className="text-sm text-gray-500">
+              Issued on {formatDisplayDate(invoice.issueDate)} • Due on {formatDisplayDate(invoice.dueDate)}
+            </span>
+          </div>
           <PrintButton 
             document={invoice}
             documentType="invoice"
             companyInfo={companySettings}
           />
-          <Link href={`/dashboard/invoices/${invoice.id}/edit`}>
-            <Button variant="outline">Edit Invoice</Button>
-          </Link>
         </div>
       </div>
       
@@ -118,14 +134,8 @@ export default function InvoiceDetailPage() {
             <div>
               <h2 className="text-lg font-medium text-gray-900">Invoice Details</h2>
               <p className="mt-1 text-sm text-gray-500">
-                Created on {invoice.createdAt.toLocaleDateString()}
+                Created on {formatDisplayDate(invoice.createdAt)}
               </p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Status</p>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status as keyof typeof statusColors]}`}>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </span>
             </div>
           </div>
           
@@ -142,18 +152,17 @@ export default function InvoiceDetailPage() {
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500">Issue Date</h3>
-              <p className="mt-1 text-sm text-gray-900">{invoice.issueDate.toLocaleDateString()}</p>
+              <p className="mt-1 text-sm text-gray-900">{formatDisplayDate(invoice.issueDate)}</p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500">Due Date</h3>
-              <p className="mt-1 text-sm text-gray-900">{invoice.dueDate.toLocaleDateString()}</p>
+              <p className="mt-1 text-sm text-gray-900">{formatDisplayDate(invoice.dueDate)}</p>
             </div>
           </div>
           
           <div className="mt-6">
             <LineItemsTable 
               items={invoice.items} 
-              onChange={() => {}}
               readOnly={true} 
             />
           </div>
@@ -187,14 +196,14 @@ export default function InvoiceDetailPage() {
             <h3 className="text-sm font-medium text-gray-900 mb-4">Actions</h3>
             <div className="space-y-2">
               {status === 'draft' && (
-                <Button variant="primary" fullWidth>Send Invoice</Button>
+                <Button variant="primary" size='lg' onClick={() => setShowSendDialog(true)}>Send Invoice</Button>
               )}
               {(status === 'sent' || status === 'overdue') && (
-                <Button variant="primary" fullWidth>Mark as Paid</Button>
+                <Button variant="primary" size='lg'>Mark as Paid</Button>
               )}
-              <Button variant="outline" fullWidth>Download PDF</Button>
+              <Button variant="outline" size='lg' onClick={handleDownloadPDF}>Download PDF</Button>
               {status !== 'paid' && status !== 'cancelled' && (
-                <Button variant="danger" fullWidth>Cancel Invoice</Button>
+                <Button variant="danger" size='lg'>Cancel Invoice</Button>
               )}
             </div>
           </div>

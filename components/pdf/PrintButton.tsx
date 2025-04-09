@@ -14,7 +14,6 @@ interface PrintButtonProps {
   companyInfo: CompanySettings;
   variant?: ButtonVariant;
   size?: 'sm' | 'md' | 'lg';
-  fullWidth?: boolean;
 }
 
 const PrintButton: React.FC<PrintButtonProps> = ({
@@ -22,8 +21,7 @@ const PrintButton: React.FC<PrintButtonProps> = ({
   documentType,
   companyInfo,
   variant = 'outline',
-  size,
-  fullWidth
+  size
 }) => {
   const handlePrint = async () => {
     // Create the correct document based on type
@@ -53,7 +51,6 @@ const PrintButton: React.FC<PrintButtonProps> = ({
       onClick={handlePrint}
       variant={variant}
       size={size}
-      fullWidth={fullWidth}
     >
       Print
     </Button>

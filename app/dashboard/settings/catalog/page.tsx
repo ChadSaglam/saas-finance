@@ -14,7 +14,7 @@ import Modal from '@/components/ui/Modal';
 import Checkbox from '@/components/ui/Checkbox';
 import Tabs from '@/components/ui/Tabs';
 import { CatalogItem } from '@/lib/models';
-import { dummyCatalogData } from '@/lib/dummy-data/catalog-items';
+import { dummyCatalogData } from '@/lib/dummy-data/catalog';
 
 export default function CatalogPage() {
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);

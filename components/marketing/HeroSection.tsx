@@ -44,7 +44,7 @@ export function HeroSection() {
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
                 <Link
-                  href="#demo-video"
+                  href="/dashboard"
                   className="inline-flex h-12 items-center justify-center rounded-md border border-gray-200 bg-white px-6 text-base font-medium text-gray-900 shadow-sm transition-colors hover:bg-gray-50"
                 >
                   Watch Demo

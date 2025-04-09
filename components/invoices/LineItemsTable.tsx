@@ -5,6 +5,8 @@ import { formatCurrency } from '@/lib/utils/format';
 
 interface LineItemsTableProps {
   items: LineItem[];
+  onChange?: (items: LineItem[]) => void;  // Added onChange prop
+  readOnly?: boolean;                      // Added readOnly prop
   onEditItem?: (id: string) => void;
   onDeleteItem?: (id: string) => void;
   showActions?: boolean;
@@ -13,6 +15,8 @@ interface LineItemsTableProps {
 
 const LineItemsTable: React.FC<LineItemsTableProps> = ({ 
   items, 
+  onChange,
+  readOnly = false,
   onEditItem, 
   onDeleteItem,
   showActions = true,
@@ -20,6 +24,9 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
 }) => {
   // Calculate totals
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+  
+  // If readOnly is true, don't show actions regardless of showActions prop
+  const displayActions = readOnly ? false : showActions;
   
   return (
     <div className={`overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg ${className}`}>
@@ -44,7 +51,7 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
             <th scope="col" className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">
               Amount
             </th>
-            {showActions && (
+            {displayActions && (
               <th scope="col" className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">
                 Actions
               </th>
@@ -57,14 +64,14 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
               <LineItemRow 
                 key={item.id} 
                 item={item} 
-                onEdit={onEditItem} 
-                onDelete={onDeleteItem}
-                showActions={showActions}
+                onEdit={readOnly ? undefined : onEditItem} 
+                onDelete={readOnly ? undefined : onDeleteItem}
+                showActions={displayActions}
               />
             ))
           ) : (
             <tr>
-              <td colSpan={showActions ? 7 : 6} className="px-4 py-6 text-sm text-gray-500 text-center">
+              <td colSpan={displayActions ? 7 : 6} className="px-4 py-6 text-sm text-gray-500 text-center">
                 No items added yet.
               </td>
             </tr>
@@ -72,13 +79,13 @@ const LineItemsTable: React.FC<LineItemsTableProps> = ({
         </tbody>
         <tfoot className="bg-gray-50">
           <tr>
-            <td colSpan={showActions ? 5 : 4} className="px-4 py-3 text-sm font-medium text-gray-900 text-right">
+            <td colSpan={displayActions ? 5 : 4} className="px-4 py-3 text-sm font-medium text-gray-900 text-right">
               Subtotal:
             </td>
             <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">
               {formatCurrency(subtotal)}
             </td>
-            {showActions && <td></td>}
+            {displayActions && <td></td>}
           </tr>
         </tfoot>
       </table>
