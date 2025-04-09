@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, memo } from 'react';
 import Card from '@/components/ui/Card';
 
 interface ChartCardProps {
@@ -8,7 +8,7 @@ interface ChartCardProps {
   className?: string;
 }
 
-const ChartCard: React.FC<ChartCardProps> = ({ 
+const ChartCard = memo<ChartCardProps>(({ 
   title, 
   subtitle, 
   children, 
@@ -16,15 +16,17 @@ const ChartCard: React.FC<ChartCardProps> = ({
 }) => {
   return (
     <Card className={`overflow-hidden ${className}`}>
-      <div className="p-5">
+      <div className="p-4 sm:p-5">
         <div className="mb-4">
           <h2 className="text-lg font-medium text-gray-900">{title}</h2>
-          {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+          {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
         </div>
         {children}
       </div>
     </Card>
   );
-};
+});
+
+ChartCard.displayName = 'ChartCard';
 
 export default ChartCard;

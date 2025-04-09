@@ -9,7 +9,7 @@ import {
   Font 
 } from '@react-pdf/renderer';
 import { Invoice } from '@/lib/models';
-import { formatDisplayDate } from '@/lib/utils/date-format';
+import { formatDisplayDate } from '@/lib/utils/format';
 import { CompanySettings } from '@/lib/models';
 
 // Register fonts (optional - for better typography)
@@ -239,6 +239,29 @@ const InvoicePDFDocument: React.FC<InvoicePDFDocumentProps> = ({ invoice, compan
 
   const companyAddress = formatFullAddress(companyInfo);
 
+  const isValidImageUrl = (url?: string): boolean => {
+    if (!url) return false;
+    
+    try {
+      // For absolute URLs
+      if (url.startsWith('http')) {
+        return true;
+      }
+      
+      // For relative URLs, ensure they include an image extension
+      const validExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'];
+      const hasValidExtension = validExtensions.some(ext => url.toLowerCase().endsWith(ext));
+      
+      // Make sure URL is properly formatted for local files
+      const isProperlyFormatted = url.startsWith('/');
+      
+      return hasValidExtension && isProperlyFormatted;
+    } catch (error) {
+      console.error('Error validating image URL:', error);
+      return false;
+    }
+  };
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -249,10 +272,11 @@ const InvoicePDFDocument: React.FC<InvoicePDFDocumentProps> = ({ invoice, compan
             <Text style={styles.invoiceNumber}>#{invoice.invoiceNumber}</Text>
           </View>
           <View style={styles.companyInfo}>
-            {companyInfo.logo && (
+            {isValidImageUrl(companyInfo.logo) ? (
               <Image src={companyInfo.logo} style={styles.logo} />
+            ) : (
+              <Text style={{...styles.companyName, fontSize: 20, marginBottom: 10}}>{companyInfo.name}</Text>
             )}
-            <Text style={styles.companyName}>{companyInfo.name}</Text>
             {companyAddress.map((line, i) => (
               <Text key={i}>{line}</Text>
             ))}

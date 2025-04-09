@@ -1,8 +1,9 @@
-import React from 'react';
-import { PDFViewer, DocumentProps } from '@react-pdf/renderer';
+import React, { useState, useEffect } from 'react';
+import { PDFViewer } from '@react-pdf/renderer';
 import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
 import { PDFDocumentElement } from '@/lib/types/pdf';
+import { DownloadIcon, XIcon, ExpandIcon } from '@/components/ui/Icons';
+
 
 interface PDFPreviewDialogProps {
   title: string;
@@ -19,30 +20,116 @@ const PDFPreviewDialog: React.FC<PDFPreviewDialogProps> = ({
   onClose, 
   isGenerating 
 }) => {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      const pdfViewer = document.getElementById('pdf-viewer-container');
+      if (pdfViewer) {
+        pdfViewer.requestFullscreen().catch(err => {
+          console.error(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+      }
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  // Use portal to attach at the root level
+  useEffect(() => {
+    // Prevent scrolling on the body when modal is open
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      // Re-enable scrolling when modal is closed
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-800 bg-opacity-75 flex items-center justify-center p-4">
-      <Card className="w-full max-w-6xl h-[90vh] flex flex-col">
-        <div className="p-4 border-b flex justify-between items-center">
-          <h2 className="text-xl font-semibold">{title}</h2>
-          <div className="flex space-x-2">
+    <div className="fixed inset-0 z-[9999] overflow-hidden bg-gray-900 bg-opacity-90 flex items-center justify-center p-0 mt-10 sm:p-2">
+      <div className="w-full h-full max-w-[95vw] max-h-[95vh] flex flex-col bg-white rounded-none sm:rounded-lg shadow-xl">
+        <div className="p-3 sm:p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 rounded-t-lg">
+          <h2 className="text-lg sm:text-xl font-semibold truncate">{title}</h2>
+          <div className="flex items-center space-x-2">
             <Button 
               onClick={onDownload} 
               disabled={isGenerating}
+              isLoading={isGenerating}
+              loadingText="Generating..."
+              variant="primary"
+              className="hidden sm:flex"
+              size="sm"
             >
-              {isGenerating ? 'Generating...' : 'Download PDF'}
+              <DownloadIcon className="h-4 w-4 mr-1" />
+              Download PDF
             </Button>
-            <Button variant="outline" onClick={onClose}>
-              Close
+            <Button
+              onClick={toggleFullscreen}
+              variant="outline"
+              size="sm"
+              className="hidden sm:flex items-center"
+              title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            >
+              <ExpandIcon className="h-4 w-4" />
+              <span className="ml-1">Fullscreen</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={onClose}
+              size="sm"
+            >
+              <XIcon className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Close</span>
             </Button>
           </div>
         </div>
         
-        <div className="flex-grow bg-gray-100">
-          <PDFViewer style={{ width: '100%', height: '100%' }}>
+        <div 
+          id="pdf-viewer-container" 
+          className="flex-grow bg-gray-200 overflow-hidden"
+        >
+          <PDFViewer 
+            width="100%" 
+            height="100%" 
+            style={{ border: 'none' }}
+            showToolbar={true}
+          >
             {children}
           </PDFViewer>
         </div>
-      </Card>
+        
+        {/* Mobile download button */}
+        <div className="sm:hidden p-3 border-t border-gray-200 bg-gray-50">
+          <Button 
+            onClick={onDownload} 
+            disabled={isGenerating} 
+            isLoading={isGenerating}
+            loadingText="Generating..."
+            variant="primary"
+            fullWidth
+          >
+            <DownloadIcon className="h-5 w-5 mr-1" />
+            Download PDF
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

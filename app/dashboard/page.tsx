@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import { dummyClients } from '@/lib/dummy-data/clients';
 import { dummyInvoices } from '@/lib/dummy-data/invoices';
 import { dummyOffers } from '@/lib/dummy-data/offers';
-import { formatCurrency } from '@/lib/utils/format';
-import { formatDisplayDate } from '@/lib/utils/date-format';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import ChartCard from '@/components/dashboard/ChartCard';
@@ -17,6 +15,81 @@ import RecentItemsTable from '@/components/dashboard/RecentItemsTable';
 import MonthlyRevenueChart from '@/components/charts/MonthlyRevenueChart';
 import InvoiceStatusChart from '@/components/charts/InvoiceStatusChart';
 import { calculateMonthlyRevenue, getRecentActivity } from '@/lib/utils/dashboard-utils';
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
+
+const CalendarWidget = () => (
+  <Card>
+    <div className="flex justify-between items-center mb-4 p-4 pb-0">
+      <h2 className="text-lg font-medium text-gray-900">Calendar</h2>
+      <Link href="/dashboard/calendar" className="text-sm text-blue-600 hover:text-blue-800 transition-colors">
+        View all
+      </Link>
+    </div>
+    
+    <div className="p-4">
+      <div className="space-y-3">
+        <div className="flex border-l-4 border-blue-500 pl-3">
+          <div className="flex-1">
+            <p className="text-sm font-medium">Invoice #INV-2025-0014 due</p>
+            <p className="text-xs text-gray-500">Tomorrow</p>
+          </div>
+          <div className="text-xs font-medium text-gray-500">
+            $5,420.00
+          </div>
+        </div>
+        <div className="flex border-l-4 border-green-500 pl-3">
+          <div className="flex-1">
+            <p className="text-sm font-medium">Meeting with TechNova Inc.</p>
+            <p className="text-xs text-gray-500">April 10, 2025 • 10:00 AM</p>
+          </div>
+        </div>
+        <div className="flex border-l-4 border-yellow-500 pl-3">
+          <div className="flex-1">
+            <p className="text-sm font-medium">Follow up on Offer #OFF-2025-0021</p>
+            <p className="text-xs text-gray-500">April 12, 2025</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <button className="w-full py-2 px-4 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors">
+          Add New Event
+        </button>
+      </div>
+    </div>
+  </Card>
+);
+
+const TopClients = () => (
+  <Card>
+    <div className="p-4">
+      <h2 className="text-lg font-medium text-gray-900 mb-4">Top Clients</h2>
+      <div className="space-y-4">
+        {dummyClients.slice(0, 4).map((client) => (
+          <div key={client.id} className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                <span className="font-medium text-gray-600">{client.name.charAt(0)}</span>
+              </div>
+              <div className="ml-3">
+                <Link href={`/dashboard/clients/${client.id}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
+                  {client.name}
+                </Link>
+                <p className="text-xs text-gray-500">Last invoice: 14 days ago</p>
+              </div>
+            </div>
+            <div className="text-sm font-medium text-gray-900">$2,450.00</div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4">
+        <Link href="/dashboard/clients" className="text-sm text-blue-600 hover:text-blue-800 transition-colors">
+          View all clients
+        </Link>
+      </div>
+    </div>
+  </Card>
+);
 
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -30,15 +103,15 @@ export default function DashboardPage() {
     paidThisMonth: 0,
     conversionRate: 0
   });
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const userLogin = "ChadSaglam";
 
-  // Use a fixed reference date for calculations to prevent hydration issues
-  const referenceDate = new Date('2025-04-07T13:52:04Z'); // Using the date provided by user
-  const userLogin = "ChadSaglam"; // Using the login provided by user
-
-  // Calculate statistics
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
+    setCurrentDate(new Date());
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
       const totalClients = dummyClients.length;
       const totalInvoices = dummyInvoices.length;
       const totalOffers = dummyOffers.length;
@@ -50,12 +123,12 @@ export default function DashboardPage() {
       
       const overdue = dummyInvoices.filter(invoice => invoice.status === 'overdue').length;
       
-      // Calculate revenue for current month using reference date
+      // Calculate revenue for current month using the current date
       const paidThisMonth = dummyInvoices
         .filter(invoice => 
           invoice.status === 'paid' && 
-          invoice.issueDate.getMonth() === referenceDate.getMonth() &&
-          invoice.issueDate.getFullYear() === referenceDate.getFullYear()
+          invoice.issueDate.getMonth() === currentDate.getMonth() &&
+          invoice.issueDate.getFullYear() === currentDate.getFullYear()
         )
         .reduce((sum, invoice) => sum + invoice.total, 0);
       
@@ -76,33 +149,48 @@ export default function DashboardPage() {
       
       setIsLoading(false);
     }, 500);
-  }, []);
-  
-  // Get recent items
-  const recentInvoices = [...dummyInvoices]
-    .sort((a, b) => b.issueDate.getTime() - a.issueDate.getTime())
-    .slice(0, 5);
     
-  const recentOffers = [...dummyOffers]
-    .sort((a, b) => b.issueDate.getTime() - a.issueDate.getTime())
-    .slice(0, 5);
+    // Clean up timer on unmount
+    return () => clearTimeout(timer);
+  }, [currentDate]);
   
-  // Get activity data with fixed timestamps for SSR consistency
-  const activityItems = getRecentActivity(dummyInvoices, dummyOffers, dummyClients);
+  // Memoize expensive calculations to prevent recalculations on re-renders
+  const recentInvoices = useMemo(() => 
+    [...dummyInvoices]
+      .sort((a, b) => b.issueDate.getTime() - a.issueDate.getTime())
+      .slice(0, 5),
+    []
+  );
     
-  // Prepare chart data with fixed reference date
-  const monthlyRevenueData = calculateMonthlyRevenue(dummyInvoices);
+  const recentOffers = useMemo(() => 
+    [...dummyOffers]
+      .sort((a, b) => b.issueDate.getTime() - a.issueDate.getTime())
+      .slice(0, 5),
+    []
+  );
   
-  const invoiceStatusData = [
+  // Memoize activity data to prevent regeneration on re-renders
+  const activityItems = useMemo(() => 
+    getRecentActivity(dummyInvoices, dummyOffers, dummyClients, currentDate),
+    [currentDate]
+  );
+    
+  // Memoize chart data calculations
+  const monthlyRevenueData = useMemo(() => 
+    calculateMonthlyRevenue(dummyInvoices, currentDate),
+    [currentDate]
+  );
+  
+  const invoiceStatusData = useMemo(() => [
     { name: 'Paid', value: dummyInvoices.filter(inv => inv.status === 'paid').length, color: '#10B981' },
     { name: 'Sent', value: dummyInvoices.filter(inv => inv.status === 'sent').length, color: '#3B82F6' },
     { name: 'Overdue', value: dummyInvoices.filter(inv => inv.status === 'overdue').length, color: '#EF4444' },
     { name: 'Draft', value: dummyInvoices.filter(inv => inv.status === 'draft').length, color: '#F59E0B' },
     { name: 'Cancelled', value: dummyInvoices.filter(inv => inv.status === 'cancelled').length, color: '#6B7280' }
-  ];
+  ], []);
 
-  // Format the date for display
-  const formattedDate = referenceDate.toLocaleDateString('en-US', {
+  // Format the date for display with proper localization
+  const formattedDate = currentDate.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -127,118 +215,76 @@ export default function DashboardPage() {
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content - Charts & Tables */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Revenue Chart */}
-          <ChartCard title="Monthly Revenue" subtitle="Revenue trends over the last 6 months">
-            <div className="h-80">
-              <MonthlyRevenueChart data={monthlyRevenueData} />
-            </div>
-          </ChartCard>
+          {/* Revenue Chart with Suspense for better loading UX */}
+          <Suspense fallback={<LoadingSkeleton height="320px" />}>
+            <ChartCard title="Monthly Revenue" subtitle="Revenue trends over the last 6 months">
+              <div className="h-80">
+                {isLoading ? 
+                  <LoadingSkeleton height="100%" />
+                  : <MonthlyRevenueChart data={monthlyRevenueData} />
+                }
+              </div>
+            </ChartCard>
+          </Suspense>
           
           {/* Invoice Status & Offers Status */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ChartCard title="Invoice Status" subtitle="Distribution by status">
-              <div className="h-64">
-                <InvoiceStatusChart data={invoiceStatusData} />
-              </div>
-            </ChartCard>
+            <Suspense fallback={<LoadingSkeleton height="260px" />}>
+              <ChartCard title="Invoice Status" subtitle="Distribution by status">
+                <div className="h-64">
+                  {isLoading ? 
+                    <LoadingSkeleton height="100%" />
+                    : <InvoiceStatusChart data={invoiceStatusData} />
+                  }
+                </div>
+              </ChartCard>
+            </Suspense>
             
-            <StatusOverview />
+            <Suspense fallback={<LoadingSkeleton height="260px" />}>
+              <StatusOverview />
+            </Suspense>
           </div>
           
           {/* Recent Invoices & Offers Tables */}
           <div className="space-y-6">
-            <RecentItemsTable 
-              title="Recent Invoices"
-              items={recentInvoices}
-              type="invoice"
-              createLink="/dashboard/invoices/create"
-              viewAllLink="/dashboard/invoices"
-            />
+            <Suspense fallback={<LoadingSkeleton height="300px" />}>
+              <RecentItemsTable 
+                title="Recent Invoices"
+                items={recentInvoices}
+                type="invoice"
+                createLink="/dashboard/invoices/create"
+                viewAllLink="/dashboard/invoices"
+              />
+            </Suspense>
             
-            <RecentItemsTable 
-              title="Recent Price Offers"
-              items={recentOffers}
-              type="offer"
-              createLink="/dashboard/offers/create"
-              viewAllLink="/dashboard/offers"
-            />
+            <Suspense fallback={<LoadingSkeleton height="300px" />}>
+              <RecentItemsTable 
+                title="Recent Price Offers"
+                items={recentOffers}
+                type="offer"
+                createLink="/dashboard/offers/create"
+                viewAllLink="/dashboard/offers"
+              />
+            </Suspense>
           </div>
         </div>
         
         {/* Sidebar - Activity & Tasks */}
         <div className="space-y-6">
           {/* Activity Feed */}
-          <ActivityFeed activities={activityItems} />
+          <Suspense fallback={<LoadingSkeleton height="300px" />}>
+            <ActivityFeed activities={activityItems} />
+          </Suspense>
           
           {/* Upcoming Tasks / Calendar Widget */}
-          <Card>
-            <div className="flex justify-between items-center mb-4 p-4 pb-0">
-              <h2 className="text-lg font-medium text-gray-900">Calendar</h2>
-              <button className="text-sm text-blue-600 hover:text-blue-800">View all</button>
-            </div>
-            
-            <div className="p-4">
-              <div className="space-y-3">
-                <div className="flex border-l-4 border-blue-500 pl-3">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Invoice #INV-2025-0014 due</p>
-                    <p className="text-xs text-gray-500">Tomorrow</p>
-                  </div>
-                  <div className="text-xs font-medium text-gray-500">
-                    $5,420.00
-                  </div>
-                </div>
-                <div className="flex border-l-4 border-green-500 pl-3">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Meeting with TechNova Inc.</p>
-                    <p className="text-xs text-gray-500">April 10, 2025 • 10:00 AM</p>
-                  </div>
-                </div>
-                <div className="flex border-l-4 border-yellow-500 pl-3">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Follow up on Offer #OFF-2025-0021</p>
-                    <p className="text-xs text-gray-500">April 12, 2025</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <button className="w-full py-2 px-4 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100">
-                  Add New Event
-                </button>
-              </div>
-            </div>
-          </Card>
+          <Suspense fallback={<LoadingSkeleton height="220px" />}>
+            <CalendarWidget />
+          </Suspense>
           
           {/* Client Health */}
-          <Card>
-            <div className="p-4">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Top Clients</h2>
-              <div className="space-y-4">
-                {dummyClients.slice(0, 4).map((client) => (
-                  <div key={client.id} className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="font-medium text-gray-600">{client.name.charAt(0)}</span>
-                      </div>
-                      <div className="ml-3">
-                        <Link href={`/dashboard/clients/${client.id}`} className="text-sm font-medium text-gray-900">
-                          {client.name}
-                        </Link>
-                        <p className="text-xs text-gray-500">Last invoice: 14 days ago</p>
-                      </div>
-                    </div>
-                    <div className="text-sm font-medium text-gray-900">$2,450.00</div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4">
-                <Link href="/dashboard/clients" className="text-sm text-blue-600 hover:text-blue-800">
-                  View all clients
-                </Link>
-              </div>
-            </div>
-          </Card>
+          <Suspense fallback={<LoadingSkeleton height="280px" />}>
+            <TopClients />
+          </Suspense>
         </div>
       </div>
     </div>

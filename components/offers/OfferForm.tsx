@@ -6,7 +6,7 @@ import Button from '@/components/ui/Button';
 import LineItemsTable from '@/components/invoices/LineItemsTable';
 import { Offer, InvoiceItem, Client } from '@/lib/models';
 import { dummyClients } from '@/lib/dummy-data/clients';
-import { formatDate } from '@/lib/utils/date-format';
+import { formatDate } from '@/lib/utils/format';
 
 interface OfferFormProps {
   initialData?: Partial<Offer>;

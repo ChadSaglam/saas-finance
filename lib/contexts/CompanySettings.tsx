@@ -3,23 +3,26 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { CompanySettings } from '@/lib/models';
 import { companySettings as defaultSettings } from '@/lib/dummy-data/company-settings';
+import { formatDateTimeUTC } from '@/lib/utils/format';
 
 interface CompanySettingsContextType {
   settings: CompanySettings;
   updateSettings: (settings: CompanySettings) => Promise<void>;
   isSaving: boolean;
   lastSaved: Date | null;
+  currentDateTime: string;
+  currentUser: string;
 }
 
-// Create context
 export const CompanySettingsContext = createContext<CompanySettingsContextType>({
   settings: defaultSettings,
   updateSettings: async () => {},
   isSaving: false,
-  lastSaved: null
+  lastSaved: null,
+  currentDateTime: '',
+  currentUser: ''
 });
 
-// Custom hook
 export const useCompanySettings = () => useContext(CompanySettingsContext);
 
 interface CompanySettingsProviderProps {
@@ -27,7 +30,7 @@ interface CompanySettingsProviderProps {
 }
 
 export const CompanySettingsProvider: React.FC<CompanySettingsProviderProps> = ({ children }) => {
-  // Initialize from localStorage only once (with a function to prevent re-computation)
+  // Initialize from localStorage only once
   const [settings, setSettings] = useState<CompanySettings>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('companySettings');
@@ -44,6 +47,21 @@ export const CompanySettingsProvider: React.FC<CompanySettingsProviderProps> = (
   
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  
+  const [currentDateTime, setCurrentDateTime] = useState('');
+  const [currentUser, setCurrentUser] = useState('ChadSaglam');
+
+  useEffect(() => {
+    // Set initial value
+    setCurrentDateTime(formatDateTimeUTC(new Date()));
+    
+    // Update every minute
+    const interval = setInterval(() => {
+      setCurrentDateTime(formatDateTimeUTC(new Date()));
+    }, 60000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Add storage event listener only once
   useEffect(() => {
@@ -62,7 +80,7 @@ export const CompanySettingsProvider: React.FC<CompanySettingsProviderProps> = (
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []); // Empty dependency array - only run once
+  }, []);
 
   const updateSettings = async (newSettings: CompanySettings): Promise<void> => {
     setIsSaving(true);
@@ -83,12 +101,13 @@ export const CompanySettingsProvider: React.FC<CompanySettingsProviderProps> = (
     }
   };
 
-  // Value object - only created when dependencies change
   const contextValue = {
     settings,
     updateSettings,
     isSaving,
-    lastSaved
+    lastSaved,
+    currentDateTime,
+    currentUser
   };
 
   return (

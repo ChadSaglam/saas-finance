@@ -1,36 +1,63 @@
 import React from 'react';
 
-type StatusType = 'active' | 'inactive' | 'pending' | 'success' | 'error' | 'warning';
+type StatusType = 'invoice' | 'offer';
 
 interface StatusBadgeProps {
-  status: StatusType;
-  className?: string;
+  status: string;
+  type?: StatusType;
+  size?: 'sm' | 'md';
 }
 
-const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = '' }) => {
-  const getStatusStyles = (): string => {
+const StatusBadge: React.FC<StatusBadgeProps> = ({ status, type = 'invoice', size = 'sm' }) => {
+  // Determine background and text colors based on status and type
+  let colorClasses = '';
+  
+  if (type === 'invoice') {
     switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'inactive':
-        return 'bg-gray-200 text-gray-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'success':
-        return 'bg-green-100 text-green-800';
-      case 'error':
-        return 'bg-red-100 text-red-800';
-      case 'warning':
-        return 'bg-yellow-100 text-yellow-800';
+      case 'paid':
+        colorClasses = 'bg-green-100 text-green-800';
+        break;
+      case 'sent':
+        colorClasses = 'bg-blue-100 text-blue-800';
+        break;
+      case 'overdue':
+        colorClasses = 'bg-red-100 text-red-800';
+        break;
+      case 'cancelled':
+        colorClasses = 'bg-gray-100 text-gray-800';
+        break;
+      case 'draft':
       default:
-        return 'bg-gray-100 text-gray-800';
+        colorClasses = 'bg-yellow-100 text-yellow-800';
+        break;
     }
-  };
+  } else {
+    switch (status) {
+      case 'accepted':
+        colorClasses = 'bg-green-100 text-green-800';
+        break;
+      case 'sent':
+        colorClasses = 'bg-blue-100 text-blue-800';
+        break;
+      case 'rejected':
+        colorClasses = 'bg-red-100 text-red-800';
+        break;
+      case 'expired':
+        colorClasses = 'bg-gray-100 text-gray-800';
+        break;
+      case 'draft':
+      default:
+        colorClasses = 'bg-yellow-100 text-yellow-800';
+        break;
+    }
+  }
+  
+  const sizeClasses = size === 'sm' 
+    ? 'px-2 text-xs leading-5' 
+    : 'px-3 py-1 text-sm';
 
   return (
-    <span 
-      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusStyles()} ${className}`}
-    >
+    <span className={`${sizeClasses} inline-flex font-semibold rounded-full ${colorClasses}`}>
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   );

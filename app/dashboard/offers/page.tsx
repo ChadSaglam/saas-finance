@@ -6,7 +6,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { dummyOffers } from '@/lib/dummy-data/offers';
 import { Offer } from '@/lib/models';
-import { formatDisplayDate } from '@/lib/utils/date-format';
+import { formatDisplayDate } from '@/lib/utils/format';
 
 export default function OffersPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');

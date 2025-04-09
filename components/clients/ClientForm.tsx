@@ -5,7 +5,11 @@ import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import Input from '@/components/ui/Input';
+import Textarea from '@/components/ui/TextArea';
+import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import { Client } from '@/lib/models';
+import { formatDisplayDate } from '@/lib/utils/format';
 
 interface ClientFormProps {
   client?: Client;
@@ -23,10 +27,6 @@ const ClientForm: React.FC<ClientFormProps> = ({
   const router = useRouter();
   const isEditMode = !!client;
   
-  // Fixed reference date for consistent timestamps
-  const referenceDate = new Date('2025-04-07T14:22:15Z');
-  
-  // Form state
   const [formData, setFormData] = useState({
     name: '',
     contactPerson: '',
@@ -42,8 +42,8 @@ const ClientForm: React.FC<ClientFormProps> = ({
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   
-  // Load client data if in edit mode
   useEffect(() => {
     if (client) {
       setFormData({
@@ -70,45 +70,101 @@ const ClientForm: React.FC<ClientFormProps> = ({
       [name]: value
     }));
     
-    // Clear error when field is edited
-    if (errors[name]) {
-      setErrors(prev => ({
+    // Mark field as touched
+    if (!touched[name]) {
+      setTouched(prev => ({
         ...prev,
-        [name]: ''
+        [name]: true
       }));
     }
+    
+    // Validate on change for better UX
+    validateField(name, value);
+  };
+  
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+    
+    validateField(name, value);
+  };
+  
+  const validateField = (name: string, value: string): boolean => {
+    let error = '';
+    
+    switch (name) {
+      case 'name':
+        if (!value.trim()) {
+          error = 'Client name is required';
+        }
+        break;
+      case 'email':
+        if (!value.trim()) {
+          error = 'Email is required';
+        } else if (!/^\S+@\S+\.\S+$/.test(value)) {
+          error = 'Please enter a valid email address';
+        }
+        break;
+      case 'phone':
+        if (!value.trim()) {
+          error = 'Phone number is required';
+        }
+        break;
+      case 'address':
+        if (!value.trim()) {
+          error = 'Address is required';
+        }
+        break;
+      case 'website':
+        if (value.trim() && !/^https?:\/\/.+\..+/.test(value)) {
+          error = 'Please enter a valid URL (including http:// or https://)';
+        }
+        break;
+    }
+    
+    setErrors(prev => ({
+      ...prev,
+      [name]: error
+    }));
+    
+    return !error;
   };
   
   const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
+    // Mark all fields as touched
+    const allTouched = Object.keys(formData).reduce(
+      (acc, key) => ({ ...acc, [key]: true }),
+      {}
+    );
+    setTouched(allTouched);
     
-    // Required fields
-    if (!formData.name.trim()) {
-      newErrors.name = 'Client name is required';
+    // Validate all fields
+    let isValid = true;
+    for (const [key, value] of Object.entries(formData)) {
+      if (!validateField(key, value as string)) {
+        isValid = false;
+      }
     }
     
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-    
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    }
-    
-    if (!formData.address.trim()) {
-      newErrors.address = 'Address is required';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return isValid;
   };
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
+      // Focus the first field with an error
+      const firstErrorField = Object.keys(errors).find(key => errors[key]);
+      if (firstErrorField) {
+        const element = document.getElementById(firstErrorField);
+        if (element) {
+          element.focus();
+        }
+      }
       return;
     }
     
@@ -119,14 +175,14 @@ const ClientForm: React.FC<ClientFormProps> = ({
       email: formData.email,
       phone: formData.phone,
       address: formData.address,
-      city: formData.city,
-      state: formData.state,
-      zipCode: formData.zipCode,
-      country: formData.country,
-      website: formData.website,
-      notes: formData.notes,
-      createdAt: client?.createdAt || referenceDate,
-      updatedAt: referenceDate
+      city: formData.city || undefined,
+      state: formData.state || undefined,
+      zipCode: formData.zipCode || undefined,
+      country: formData.country || undefined,
+      website: formData.website || undefined,
+      notes: formData.notes || undefined,
+      createdAt: client?.createdAt || new Date(),
+      updatedAt: new Date()
     };
     
     if (onSubmit) {
@@ -150,270 +206,248 @@ const ClientForm: React.FC<ClientFormProps> = ({
     <form onSubmit={handleSubmit}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Card>
-            <div className="p-6">
-              <h2 className="text-xl font-medium text-gray-900 mb-6">
-                {isEditMode ? 'Edit Client' : 'New Client'}
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="col-span-2">
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Client Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className={`block w-full rounded-md shadow-sm sm:text-sm ${
-                      errors.name 
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    }`}
-                    placeholder="Company or individual name"
-                  />
-                  {errors.name && (
-                    <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-                  )}
-                </div>
-                
-                <div>
-                  <label htmlFor="contactPerson" className="block text-sm font-medium text-gray-700 mb-1">
-                    Contact Person
-                  </label>
-                  <input
-                    type="text"
-                    id="contactPerson"
-                    name="contactPerson"
-                    value={formData.contactPerson}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="Primary contact"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className={`block w-full rounded-md shadow-sm sm:text-sm ${
-                      errors.email 
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    }`}
-                    placeholder="email@example.com"
-                  />
-                  {errors.email && (
-                    <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-                  )}
-                </div>
-                
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className={`block w-full rounded-md shadow-sm sm:text-sm ${
-                      errors.phone 
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    }`}
-                    placeholder="+1 (555) 123-4567"
-                  />
-                  {errors.phone && (
-                    <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-                  )}
-                </div>
-                
-                <div>
-                  <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-1">
-                    Website
-                  </label>
-                  <input
-                    type="url"
-                    id="website"
-                    name="website"
-                    value={formData.website}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="https://www.example.com"
-                  />
-                </div>
-              </div>
-              
-              <div className="mt-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Address Information</h3>
+          <AnimatedContainer animation="slide-in-up" duration={300} delay={100}>
+            <Card className="card-shadow">
+              <div className="p-6">
+                <h2 className="text-xl font-medium text-gray-900 mb-6">
+                  {isEditMode ? 'Edit Client' : 'New Client'}
+                </h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="col-span-2">
-                    <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                      Street Address <span className="text-red-500">*</span>
-                    </label>
-                    <input
+                    <Input
+                      label="Client Name"
                       type="text"
-                      id="address"
-                      name="address"
-                      value={formData.address}
+                      id="name"
+                      name="name"
+                      value={formData.name}
                       onChange={handleChange}
-                      className={`block w-full rounded-md shadow-sm sm:text-sm ${
-                        errors.address 
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                      }`}
-                      placeholder="123 Main St"
-                    />
-                    {errors.address && (
-                      <p className="mt-1 text-sm text-red-600">{errors.address}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                      City
-                    </label>
-                    <input
-                      type="text"
-                      id="city"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      onBlur={handleBlur}
+                      error={touched.name ? errors.name : undefined}
+                      placeholder="Company or individual name"
+                      autoComplete="organization"
+                      required
                     />
                   </div>
                   
                   <div>
-                    <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-                      State / Province
-                    </label>
-                    <input
+                    <Input
+                      label="Contact Person"
                       type="text"
-                      id="state"
-                      name="state"
-                      value={formData.state}
+                      id="contactPerson"
+                      name="contactPerson"
+                      value={formData.contactPerson}
                       onChange={handleChange}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      onBlur={handleBlur}
+                      placeholder="Primary contact"
+                      autoComplete="name"
                     />
                   </div>
                   
                   <div>
-                    <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 mb-1">
-                      ZIP / Postal Code
-                    </label>
-                    <input
-                      type="text"
-                      id="zipCode"
-                      name="zipCode"
-                      value={formData.zipCode}
+                    <Input
+                      label="Email"
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
                       onChange={handleChange}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      onBlur={handleBlur}
+                      error={touched.email ? errors.email : undefined}
+                      placeholder="email@example.com"
+                      autoComplete="email"
+                      required
                     />
                   </div>
                   
                   <div>
-                    <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                      Country
-                    </label>
-                    <input
-                      type="text"
-                      id="country"
-                      name="country"
-                      value={formData.country}
+                    <Input
+                      label="Phone"
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={formData.phone}
                       onChange={handleChange}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      onBlur={handleBlur}
+                      error={touched.phone ? errors.phone : undefined}
+                      placeholder="+1 (555) 123-4567"
+                      autoComplete="tel"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Input
+                      label="Website"
+                      type="url"
+                      id="website"
+                      name="website"
+                      value={formData.website}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      error={touched.website ? errors.website : undefined}
+                      placeholder="https://www.example.com"
+                      autoComplete="url"
                     />
                   </div>
                 </div>
+                
+                <div className="mt-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Address Information</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="col-span-2">
+                      <Input
+                        label="Street Address"
+                        type="text"
+                        id="address"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        error={touched.address ? errors.address : undefined}
+                        placeholder="123 Main St"
+                        autoComplete="street-address"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <Input
+                        label="City"
+                        type="text"
+                        id="city"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        autoComplete="address-level2"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Input
+                        label="State / Province"
+                        type="text"
+                        id="state"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        autoComplete="address-level1"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Input
+                        label="ZIP / Postal Code"
+                        type="text"
+                        id="zipCode"
+                        name="zipCode"
+                        value={formData.zipCode}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        autoComplete="postal-code"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Input
+                        label="Country"
+                        type="text"
+                        id="country"
+                        name="country"
+                        value={formData.country}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        autoComplete="country"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-6">
+                  <Textarea
+                    label="Notes"
+                    id="notes"
+                    name="notes"
+                    rows={4}
+                    value={formData.notes}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder="Additional information about this client..."
+                  />
+                </div>
               </div>
-              
-              <div className="mt-6">
-                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-                  Notes
-                </label>
-                <textarea
-                  id="notes"
-                  name="notes"
-                  rows={4}
-                  value={formData.notes}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Additional information about this client..."
-                />
-              </div>
-            </div>
-          </Card>
+            </Card>
+          </AnimatedContainer>
         </div>
         
         <div>
-          <Card>
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Summary</h3>
-              
-              <div className="text-sm text-gray-500 mb-6">
-                <p>Fill in the client details and click save to {isEditMode ? 'update the' : 'create a new'} client record.</p>
-                <p className="mt-2">Fields marked with <span className="text-red-500">*</span> are required.</p>
-              </div>
-              
-              {isEditMode && (
-                <div className="mb-6 pt-4 border-t border-gray-200">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Created:</span>
-                    <span className="text-gray-900">{client.createdAt.toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm mt-2">
-                    <span className="text-gray-500">Last updated:</span>
-                    <span className="text-gray-900">{client.updatedAt.toLocaleDateString()}</span>
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex flex-col space-y-3">
-                <Button 
-                  type="submit"
-                  variant="primary"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Saving...' : (isEditMode ? 'Update Client' : 'Save Client')}
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={handleCancel}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </Card>
-          
-          {isEditMode && (
-            <Card className="mt-6">
+          <AnimatedContainer animation="slide-in-up" duration={300} delay={200}>
+            <Card className="card-shadow">
               <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Danger Zone</h3>
-                <p className="text-sm text-gray-500 mb-4">
-                  Permanently delete this client and all associated data.
-                </p>
-                <Button 
-                  type="button" 
-                  variant="danger"
-                >
-                  Delete Client
-                </Button>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Summary</h3>
+                
+                <div className="text-sm text-gray-500 mb-6">
+                  <p>Fill in the client details and click save to {isEditMode ? 'update the' : 'create a new'} client record.</p>
+                  <p className="mt-2">Fields marked with <span className="text-red-500">*</span> are required.</p>
+                </div>
+                
+                {isEditMode && client && (
+                  <div className="mb-6 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Created:</span>
+                      <span className="text-gray-900">{formatDisplayDate(client.createdAt)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm mt-2">
+                      <span className="text-gray-500">Last updated:</span>
+                      <span className="text-gray-900">{formatDisplayDate(client.updatedAt)}</span>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex flex-col space-y-3">
+                  <Button 
+                    type="submit"
+                    variant="primary"
+                    disabled={isSubmitting}
+                    isLoading={isSubmitting}
+                    loadingText={isEditMode ? "Updating..." : "Saving..."}
+                    fullWidth
+                  >
+                    {isEditMode ? 'Update Client' : 'Save Client'}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={handleCancel}
+                    fullWidth
+                  >
+                    Cancel
+                  </Button>
+                </div>
               </div>
             </Card>
-          )}
+            
+            {isEditMode && (
+              <Card className="mt-6 card-shadow">
+                <div className="p-6">
+                  <h3 className="text-lg font-medium text-red-900 mb-4">Danger Zone</h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Permanently delete this client and all associated data. This action cannot be undone.
+                  </p>
+                  <Button 
+                    type="button" 
+                    variant="danger"
+                    fullWidth
+                  >
+                    Delete Client
+                  </Button>
+                </div>
+              </Card>
+            )}
+          </AnimatedContainer>
         </div>
       </div>
     </form>

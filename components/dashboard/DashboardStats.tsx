@@ -2,8 +2,6 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Card from '@/components/ui/Card';
 import { formatCurrency } from '@/lib/utils/format';
-
-// Icons
 import { TrendingUpIcon, TrendingDownIcon, UsersIcon, DocumentIcon, TagIcon, CashIcon, ExclamationIcon, CheckCircleIcon } from '@/components/ui/Icons';
 
 interface StatsCardProps {
@@ -15,7 +13,7 @@ interface StatsCardProps {
   isLoading?: boolean;
 }
 
-const StatsCard: React.FC<StatsCardProps> = ({ 
+const StatsCard = React.memo<StatsCardProps>(({ 
   title, 
   value, 
   icon, 
@@ -28,12 +26,12 @@ const StatsCard: React.FC<StatsCardProps> = ({
   
   return (
     <Card className="bg-white overflow-hidden">
-      <div className="p-5">
+      <div className="p-4 sm:p-5">
         <div className="flex items-center">
-          <div className={`flex-shrink-0 rounded-md ${colorClass} p-3`}>
+          <div className={`flex-shrink-0 rounded-md ${colorClass} p-2 sm:p-3`}>
             {icon}
           </div>
-          <div className="ml-5 w-0 flex-1">
+          <div className="ml-3 sm:ml-5 w-0 flex-1">
             <dl>
               <dt className="text-sm font-medium text-gray-500 truncate">{title}</dt>
               <dd className="flex items-baseline">
@@ -43,7 +41,8 @@ const StatsCard: React.FC<StatsCardProps> = ({
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-lg font-medium text-gray-900"
+                    transition={{ duration: 0.3 }}
+                    className="text-base sm:text-lg font-medium text-gray-900"
                   >
                     {value}
                   </motion.div>
@@ -64,7 +63,9 @@ const StatsCard: React.FC<StatsCardProps> = ({
       </div>
     </Card>
   );
-};
+});
+
+StatsCard.displayName = 'StatsCard';
 
 interface DashboardStatsProps {
   data: {
@@ -80,13 +81,13 @@ interface DashboardStatsProps {
   isLoading?: boolean;
 }
 
-const DashboardStats: React.FC<DashboardStatsProps> = ({ data, isLoading = false }) => {
+const DashboardStats = React.memo<DashboardStatsProps>(({ data, isLoading = false }) => {
   return (
-    <div className="mt-6 grid gap-5 grid-cols-2 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="mt-6 grid gap-4 sm:gap-5 grid-cols-1 xs:grid-cols-2 lg:grid-cols-4">
       <StatsCard 
         title="Total Clients"
         value={data.totalClients}
-        icon={<UsersIcon className="h-6 w-6 text-white" />}
+        icon={<UsersIcon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />}
         change={5.3}
         colorClass="bg-blue-500"
         isLoading={isLoading}
@@ -95,7 +96,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ data, isLoading = false
       <StatsCard 
         title="Total Revenue"
         value={formatCurrency(data.totalRevenue)}
-        icon={<CashIcon className="h-6 w-6 text-white" />}
+        icon={<CashIcon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />}
         change={12.5}
         colorClass="bg-green-500"
         isLoading={isLoading}
@@ -104,7 +105,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ data, isLoading = false
       <StatsCard 
         title="Pending Revenue"
         value={formatCurrency(data.pendingRevenue)}
-        icon={<ExclamationIcon className="h-6 w-6 text-white" />}
+        icon={<ExclamationIcon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />}
         colorClass="bg-yellow-500"
         isLoading={isLoading}
       />
@@ -112,13 +113,15 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ data, isLoading = false
       <StatsCard 
         title="Conversion Rate"
         value={`${data.conversionRate.toFixed(1)}%`}
-        icon={<CheckCircleIcon className="h-6 w-6 text-white" />}
+        icon={<CheckCircleIcon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />}
         change={-2.3}
         colorClass="bg-purple-500"
         isLoading={isLoading}
       />
     </div>
   );
-};
+});
+
+DashboardStats.displayName = 'DashboardStats';
 
 export default DashboardStats;

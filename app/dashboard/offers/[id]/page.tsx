@@ -7,7 +7,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import LineItemsTable from '@/components/invoices/LineItemsTable';
 import { dummyOffers } from '@/lib/dummy-data/offers';
-import { formatDisplayDate } from '@/lib/utils/date-format';
+import { formatDisplayDate } from '@/lib/utils/format';
 import { usePageParams } from '@/lib/hooks/usePageParams';
 import OfferPDFDocument from '@/components/pdf/OfferPDFDocument';
 import { downloadPDF, saveOfferPDF } from '@/lib/utils/pdf-service';

@@ -1,66 +1,110 @@
 "use client";
 
-import React, { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import AnimatedContainer from '@/components/ui/AnimatedContainer';
+import StatusBadge from '@/components/ui/StatusBadge';
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import LineItemsTable from '@/components/invoices/LineItemsTable';
 import { dummyInvoices } from '@/lib/dummy-data/invoices';
 import { usePageParams } from '@/lib/hooks/usePageParams';
 import InvoicePDFDocument from '@/components/pdf/InvoicePDFDocument';
-import { formatDisplayDate } from '@/lib/utils/date-format';
 import { downloadPDF, saveInvoicePDF } from '@/lib/utils/pdf-service';
 import QuickViewPDF from '@/components/pdf/QuickViewPDF';
 import PrintButton from '@/components/pdf/PrintButton';
 import SendInvoiceDialog from '@/components/invoices/SendInvoiceDialog';
 import PDFPreviewDialog from '@/components/pdf/PDFPreviewDialog';
 import { useCompanySettings } from '@/lib/contexts/CompanySettings';
-import { Invoice, Client } from '@/lib/models';
+import { Invoice } from '@/lib/models';
+import { 
+  EnvelopeIcon, 
+  DocumentIcon, 
+  PrinterIcon, 
+  PencilIcon, 
+  DownloadIcon,
+  EyeIcon
+} from '@/components/ui/Icons';
 
+/**
+ * InvoiceDetailPage - View and manage a specific invoice
+ * 
+ * Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-04-09 12:21:53
+ * Current User's Login: ChadSaglam
+ */
 export default function InvoiceDetailPage() {
   const params = usePageParams();
   const id = params.id;
   
-  const invoice = dummyInvoices.find(inv => inv.id === id);
-
-  const { settings: companySettings } = useCompanySettings();
-  
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   
-  if (!invoice) {
+  // Company settings context for logo and other business details
+  const { settings: companySettings, currentDateTime, currentUser } = useCompanySettings();
+  
+  // Performance monitoring
+  useEffect(() => {
+    const startTime = performance.now();
+    return () => {
+      console.log(`Render time: ${Math.round(performance.now() - startTime)}ms`);
+    };
+  }, []);
+  
+  // Fetch invoice data - memoized to prevent unnecessary API calls
+  useEffect(() => {
+    const fetchInvoice = async () => {
+      setIsLoading(true);
+      try {
+        // In a real app, this would be an API call - added small timeout for realistic feeling
+        setTimeout(() => {
+          const foundInvoice = dummyInvoices.find(inv => inv.id === id);
+          setInvoice(foundInvoice || null);
+          setIsLoading(false);
+        }, 100);
+      } catch (error) {
+        console.error('Error fetching invoice:', error);
+        setIsLoading(false);
+      }
+    };
+    
+    fetchInvoice();
+  }, [id]);
+  
+  // Show 404 if invoice doesn't exist
+  if (!isLoading && !invoice) {
     notFound();
   }
   
-  const status = invoice.status;
-  const statusColors = {
-    draft: 'bg-yellow-100 text-yellow-800',
-    sent: 'bg-blue-100 text-blue-800',
-    paid: 'bg-green-100 text-green-800',
-    overdue: 'bg-red-100 text-red-800',
-    cancelled: 'bg-gray-100 text-gray-800',
-  };
+  // Memoized values to prevent unnecessary recalculations
+  const fileName = useMemo(() => {
+    if (!invoice) return 'invoice.pdf';
+    return `Invoice-${invoice.invoiceNumber}.pdf`;
+  }, [invoice?.invoiceNumber]);
   
-  // Client details
-  const clientName = typeof invoice.client === 'object' ? invoice.client.name : 'Unknown Client';
-  const clientId = typeof invoice.client === 'object' ? invoice.client.id : '';
-  
-  // Format filename for download
-  const getFileName = () => {
-    return `Invoice-${invoice.invoiceNumber}-${formatDisplayDate(invoice.issueDate).replace(/\//g, '-')}.pdf`;
-  };
+  const clientDetails = useMemo(() => {
+    if (!invoice) return { name: 'Unknown Client', id: '' };
+    return {
+      name: typeof invoice.client === 'object' ? invoice.client.name : 'Unknown Client',
+      id: typeof invoice.client === 'object' ? invoice.client.id : ''
+    };
+  }, [invoice?.client]);
   
   // Handle PDF download
   const handleDownloadPDF = async () => {
+    if (!invoice) return;
+    
     setIsGenerating(true);
     try {
       // Create the PDF document
       const pdfDocument = <InvoicePDFDocument invoice={invoice} companyInfo={companySettings} />;
       
       // Download the PDF
-      await downloadPDF(pdfDocument, getFileName());
+      await downloadPDF(pdfDocument, fileName);
       
       // Optionally save the PDF to server/database
       await saveInvoicePDF(invoice, companySettings, (inv, company) => (
@@ -80,131 +124,221 @@ export default function InvoiceDetailPage() {
     console.log('Email sent successfully');
   };
 
+  // Handle marking as paid
+  const handleMarkAsPaid = () => {
+    // In a real app, you would update the invoice status via API
+    console.log('Marking invoice as paid');
+    setInvoice(prev => prev ? { ...prev, status: 'paid' } : null);
+  };
+
+  // Handle cancelling invoice
+  const handleCancelInvoice = () => {
+    // In a real app, you would update the invoice status via API
+    console.log('Cancelling invoice');
+    setInvoice(prev => prev ? { ...prev, status: 'cancelled' } : null);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+          <LoadingSkeleton height="30px" width="250px" className="mb-2" />
+          <div className="flex space-x-2">
+            <LoadingSkeleton height="40px" width="120px" />
+            <LoadingSkeleton height="40px" width="120px" />
+          </div>
+        </div>
+        
+        <LoadingSkeleton height="60px" className="mb-6" />
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <LoadingSkeleton height="500px" className="lg:col-span-2" />
+          <LoadingSkeleton height="400px" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!invoice) return null;
+
   return (
-    <div>
+    <AnimatedContainer animation="fade-in" duration={400}>
+      {/* Header section with invoice number and action buttons */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-4 sm:mb-0">Invoice #{invoice.invoiceNumber}</h1>
-        <div className="flex flex-wrap gap-2">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Invoice #{invoice.invoiceNumber}</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            {currentDateTime} • {currentUser}
+          </p>
+        </div>
+        <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
           <Button 
             onClick={() => setShowSendDialog(true)}
             variant="primary"
+            className="w-full sm:w-auto"
           >
+            <EnvelopeIcon className="h-5 w-5 mr-1" />
             Send to Client
           </Button>
           <Button 
             onClick={() => setShowPdfPreview(true)}
             variant="outline"
+            className="w-full sm:w-auto"
           >
+            <EyeIcon className="h-5 w-5 mr-1" />
             Preview PDF
           </Button>
           <QuickViewPDF 
             document={<InvoicePDFDocument invoice={invoice} companyInfo={companySettings} />}
-            fileName={getFileName()}
-            buttonText="Quick Download"
+            fileName={fileName}
+            buttonText="Download"
+            icon={<DownloadIcon className="h-5 w-5 mr-1" />}
+            className="w-full sm:w-auto"
           />
-          <Link href={`/dashboard/invoices/${invoice.id}/edit`}>
-            <Button variant="outline">Edit Invoice</Button>
+          <Link href={`/dashboard/invoices/${invoice.id}/edit`} className="w-full sm:w-auto">
+            <Button variant="outline" fullWidth>
+              <PencilIcon className="h-5 w-5 mr-1" />
+              Edit Invoice
+            </Button>
           </Link>
         </div>
       </div>
       
       {/* Status Bar */}
-      <div className="bg-white shadow-sm border border-gray-200 rounded-md p-4 mb-6">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status as keyof typeof statusColors]}`}>
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </span>
+      <Card className="mb-6 card-shadow">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 space-y-2 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <StatusBadge status={invoice.status} type="invoice" size="md" />
             <span className="text-sm text-gray-500">
-              Issued on {formatDisplayDate(invoice.issueDate)} • Due on {formatDisplayDate(invoice.dueDate)}
+              Issued on {new Date(invoice.issueDate).toLocaleDateString()} • Due on {new Date(invoice.dueDate).toLocaleDateString()}
             </span>
           </div>
           <PrintButton 
             document={invoice}
             documentType="invoice"
             companyInfo={companySettings}
+            variant="outline"
+            size="sm"
+            icon={<PrinterIcon className="h-5 w-5 mr-1" />}
           />
         </div>
-      </div>
+      </Card>
       
       {/* Invoice Details */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <Card className="lg:col-span-2">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h2 className="text-lg font-medium text-gray-900">Invoice Details</h2>
-              <p className="mt-1 text-sm text-gray-500">
-                Created on {formatDisplayDate(invoice.createdAt)}
-              </p>
+        {/* Invoice details card */}
+        <Card className="lg:col-span-2 card-shadow">
+          <div className="p-6">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-lg font-medium text-gray-900">Invoice Details</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Created on {new Date(invoice.createdAt).toLocaleDateString()}
+                </p>
+              </div>
             </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Invoice Number</h3>
+                <p className="mt-1 text-sm text-gray-900">{invoice.invoiceNumber}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Client</h3>
+                <p className="mt-1 text-sm">
+                  <Link href={`/dashboard/clients/${clientDetails.id}`} className="text-blue-600 hover:text-blue-800 transition-colors">
+                    {clientDetails.name}
+                  </Link>
+                </p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Issue Date</h3>
+                <p className="mt-1 text-sm text-gray-900">{new Date(invoice.issueDate).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Due Date</h3>
+                <p className="mt-1 text-sm text-gray-900">{new Date(invoice.dueDate).toLocaleDateString()}</p>
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <h3 className="text-sm font-medium text-gray-900 mb-3">Items</h3>
+              <LineItemsTable 
+                items={invoice.items} 
+                readOnly={true} 
+              />
+            </div>
+            
+            {invoice.notes && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h3 className="text-sm font-medium text-gray-900">Notes</h3>
+                <p className="mt-2 text-sm text-gray-500">{invoice.notes}</p>
+              </div>
+            )}
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Invoice Number</h3>
-              <p className="mt-1 text-sm text-gray-900">{invoice.invoiceNumber}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Client</h3>
-              <p className="mt-1 text-sm text-blue-600">
-                <Link href={`/dashboard/clients/${clientId}`}>{clientName}</Link>
-              </p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Issue Date</h3>
-              <p className="mt-1 text-sm text-gray-900">{formatDisplayDate(invoice.issueDate)}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Due Date</h3>
-              <p className="mt-1 text-sm text-gray-900">{formatDisplayDate(invoice.dueDate)}</p>
-            </div>
-          </div>
-          
-          <div className="mt-6">
-            <LineItemsTable 
-              items={invoice.items} 
-              readOnly={true} 
-            />
-          </div>
-          
-          {invoice.notes && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h3 className="text-sm font-medium text-gray-900">Notes</h3>
-              <p className="mt-2 text-sm text-gray-500">{invoice.notes}</p>
-            </div>
-          )}
         </Card>
         
-        <Card>
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Summary</h2>
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Subtotal</h3>
-              <p className="mt-1 text-sm text-gray-900">${invoice.subtotal.toFixed(2)}</p>
+        {/* Summary card */}
+        <Card className="card-shadow">
+          <div className="p-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Summary</h2>
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Subtotal</h3>
+                <p className="mt-1 text-sm text-gray-900">${invoice.subtotal.toFixed(2)}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Tax ({invoice.taxRate}%)</h3>
+                <p className="mt-1 text-sm text-gray-900">${invoice.taxAmount.toFixed(2)}</p>
+              </div>
+              <div className="pt-4 border-t border-gray-200">
+                <h3 className="text-sm font-medium text-gray-500">Total Amount</h3>
+                <p className="mt-1 text-lg font-semibold text-blue-600">${invoice.total.toFixed(2)}</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Tax ({invoice.taxRate}%)</h3>
-              <p className="mt-1 text-sm text-gray-900">${invoice.taxAmount.toFixed(2)}</p>
-            </div>
-            <div className="pt-4 border-t border-gray-200">
-              <h3 className="text-sm font-medium text-gray-500">Total Amount</h3>
-              <p className="mt-1 text-lg font-semibold text-blue-600">${invoice.total.toFixed(2)}</p>
-            </div>
-          </div>
-          
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Actions</h3>
-            <div className="space-y-2">
-              {status === 'draft' && (
-                <Button variant="primary" size='lg' onClick={() => setShowSendDialog(true)}>Send Invoice</Button>
-              )}
-              {(status === 'sent' || status === 'overdue') && (
-                <Button variant="primary" size='lg'>Mark as Paid</Button>
-              )}
-              <Button variant="outline" size='lg' onClick={handleDownloadPDF}>Download PDF</Button>
-              {status !== 'paid' && status !== 'cancelled' && (
-                <Button variant="danger" size='lg'>Cancel Invoice</Button>
-              )}
+            
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h3 className="text-sm font-medium text-gray-900 mb-4">Actions</h3>
+              <div className="space-y-3">
+                {invoice.status === 'draft' && (
+                  <Button 
+                    variant="primary" 
+                    onClick={() => setShowSendDialog(true)}
+                    fullWidth
+                  >
+                    <EnvelopeIcon className="h-5 w-5 mr-1" />
+                    Send Invoice
+                  </Button>
+                )}
+                {(invoice.status === 'sent' || invoice.status === 'overdue') && (
+                  <Button 
+                    variant="primary" 
+                    onClick={handleMarkAsPaid}
+                    fullWidth
+                  >
+                    Mark as Paid
+                  </Button>
+                )}
+                <Button 
+                  variant="outline" 
+                  onClick={handleDownloadPDF}
+                  isLoading={isGenerating}
+                  loadingText="Generating PDF..."
+                  fullWidth
+                >
+                  <DocumentIcon className="h-5 w-5 mr-1" />
+                  Download PDF
+                </Button>
+                {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+                  <Button 
+                    variant="danger" 
+                    onClick={handleCancelInvoice}
+                    fullWidth
+                  >
+                    Cancel Invoice
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </Card>
@@ -233,6 +367,6 @@ export default function InvoiceDetailPage() {
           onSend={handleEmailSent}
         />
       )}
-    </div>
+    </AnimatedContainer>
   );
 }

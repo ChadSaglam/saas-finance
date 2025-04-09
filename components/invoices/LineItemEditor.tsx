@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { LineItem, CatalogItem } from '@/lib/models';
 import { v4 as uuidv4 } from 'uuid';
 import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import Select from '@/components/ui/Select';
 import { dummyCatalogItems, findCatalogItemByCode } from '@/lib/dummy-data/catalog';
 import { formatCurrency } from '@/lib/utils/format';
 
@@ -20,7 +22,6 @@ const LineItemEditor: React.FC<LineItemEditorProps> = ({ item, onSave, onCancel 
   const [selectedCatalogItem, setSelectedCatalogItem] = useState<CatalogItem | null>(null);
   const [showCatalogDropdown, setShowCatalogDropdown] = useState(false);
 
-  // Calculate total when inputs change
   const calculateTotal = () => {
     return quantity * price;
   };
@@ -43,10 +44,8 @@ const LineItemEditor: React.FC<LineItemEditorProps> = ({ item, onSave, onCancel 
     }
   }, [code]);
 
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  // Handle form submission - changed to normal function
+  const handleSubmit = () => {
     const lineItem: LineItem = {
       id: item?.id || uuidv4(),
       code,
@@ -68,40 +67,53 @@ const LineItemEditor: React.FC<LineItemEditorProps> = ({ item, onSave, onCancel 
     setPrice(catalogItem.defaultPrice);
     setShowCatalogDropdown(false);
   };
+  
+  // Unit options for the select dropdown
+  const unitOptions = [
+    { value: 'hours', label: 'hours' },
+    { value: 'days', label: 'days' },
+    { value: 'pcs', label: 'pcs' },
+    { value: 'users', label: 'users' },
+    { value: 'month', label: 'month' },
+    { value: 'year', label: 'year' },
+    { value: 'project', label: 'project' }
+  ];
 
   return (
     <div className="bg-white p-4 rounded-md border border-gray-200 shadow-sm">
       <h3 className="text-lg font-medium mb-4">{item ? 'Edit Line Item' : 'Add Line Item'}</h3>
-      <form onSubmit={handleSubmit}>
+      
+      <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="relative">
-            <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-1">
-              Product/Service Code
-            </label>
-            <div className="flex">
-              <input
+            <div className="flex mb-4">
+              <Input
+                label="Product/Service Code"
                 id="code"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 placeholder="e.g. DEV-101"
+                className="flex-1"
               />
-              <button 
-                type="button" 
-                className="ml-2 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100"
-                onClick={() => setShowCatalogDropdown(!showCatalogDropdown)}
-              >
-                Browse
-              </button>
+              <div className="ml-2 self-end mb-4">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  size="md"
+                  onClick={() => setShowCatalogDropdown(!showCatalogDropdown)}
+                >
+                  Browse
+                </Button>
+              </div>
             </div>
             
             {/* Catalog dropdown */}
             {showCatalogDropdown && (
               <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
                 <div className="sticky top-0 z-10 bg-white px-2 py-1.5 border-b border-gray-200">
-                  <input
-                    type="text"
-                    className="block w-full border-gray-300 rounded-md shadow-sm text-sm"
+                  <Input
+                    label=""
+                    className="p-0 m-0"
                     placeholder="Search catalog items..."
                     onClick={(e) => e.stopPropagation()}
                   />
@@ -142,95 +154,68 @@ const LineItemEditor: React.FC<LineItemEditorProps> = ({ item, onSave, onCancel 
             )}
           </div>
           
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <input
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              placeholder="Description of service or product"
-              required
-            />
-          </div>
+          <Input
+            label="Description"
+            id="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description of service or product"
+            required
+          />
           
-          <div>
-            <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
-              Quantity
-            </label>
-            <input
-              id="quantity"
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={quantity}
-              onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              required
-            />
-          </div>
+          <Input
+            label="Quantity"
+            id="quantity"
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={quantity.toString()}
+            onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
+            required
+          />
           
-          <div>
-            <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-1">
-              Unit
-            </label>
-            <select
-              id="unit"
-              value={unit}
-              onChange={(e) => setUnit(e.target.value)}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            >
-              <option value="hours">hours</option>
-              <option value="days">days</option>
-              <option value="pcs">pcs</option>
-              <option value="users">users</option>
-              <option value="month">month</option>
-              <option value="year">year</option>
-              <option value="project">project</option>
-            </select>
-          </div>
+          <Select
+            label="Unit"
+            id="unit"
+            value={unit}
+            options={unitOptions}
+            onChange={(e) => setUnit(e.target.value)}
+            helpText="Unit of measurement"
+          />
           
-          <div>
-            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-              Unit Price
-            </label>
-            <input
-              id="price"
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={price}
-              onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              required
-            />
-          </div>
+          <Input
+            label="Unit Price"
+            id="price"
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={price.toString()}
+            onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+            required
+          />
           
-          <div>
-            <label htmlFor="total" className="block text-sm font-medium text-gray-700 mb-1">
-              Total
-            </label>
-            <input
-              id="total"
-              type="text"
-              value={formatCurrency(calculateTotal())}
-              className="block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm sm:text-sm"
-              readOnly
-            />
-          </div>
+          <Input
+            label="Total"
+            id="total"
+            value={formatCurrency(calculateTotal())}
+            readOnly
+            helpText="Automatically calculated"
+          />
         </div>
         
         <div className="flex justify-end space-x-2">
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary">
+          <Button 
+            type="button" 
+            variant="primary"
+            onClick={handleSubmit}
+          >
             {item ? 'Update' : 'Add'} Item
           </Button>
         </div>
-      </form>
+      </div>
     </div>
   );
 };

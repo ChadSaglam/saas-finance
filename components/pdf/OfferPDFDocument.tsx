@@ -9,7 +9,7 @@ import {
   Font 
 } from '@react-pdf/renderer';
 import { Offer } from '@/lib/models';
-import { formatDisplayDate } from '@/lib/utils/date-format';
+import { formatDisplayDate } from '@/lib/utils/format';
 import { CompanySettings } from '@/lib/models';
 
 // Register fonts (optional - for better typography)

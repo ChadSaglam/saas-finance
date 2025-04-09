@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { memo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 interface StatusData {
@@ -13,7 +13,30 @@ interface InvoiceStatusChartProps {
   data: StatusData[];
 }
 
-const InvoiceStatusChart: React.FC<InvoiceStatusChartProps> = ({ data }) => {
+const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }: any) => {
+  if (percent < 0.1) return null;
+  
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text 
+      x={x} 
+      y={y} 
+      fill="#fff" 
+      textAnchor={x > cx ? 'start' : 'end'} 
+      dominantBaseline="central"
+      fontSize={12}
+      fontWeight="medium"
+    >
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
+
+const InvoiceStatusChart = memo<InvoiceStatusChartProps>(({ data }) => {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
@@ -25,8 +48,10 @@ const InvoiceStatusChart: React.FC<InvoiceStatusChartProps> = ({ data }) => {
           outerRadius={90}
           paddingAngle={2}
           dataKey="value"
-          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
           labelLine={false}
+          label={CustomLabel}
+          animationDuration={800}
+          animationBegin={300}
         >
           {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.color} />
@@ -41,10 +66,19 @@ const InvoiceStatusChart: React.FC<InvoiceStatusChartProps> = ({ data }) => {
             padding: '8px 12px',
           }}
         />
-        <Legend verticalAlign="bottom" align="center" />
+        <Legend 
+          verticalAlign="bottom" 
+          align="center" 
+          layout="horizontal"
+          iconSize={10}
+          iconType="circle"
+          wrapperStyle={{ paddingTop: 20 }}
+        />
       </PieChart>
     </ResponsiveContainer>
   );
-};
+});
+
+InvoiceStatusChart.displayName = 'InvoiceStatusChart';
 
 export default InvoiceStatusChart;

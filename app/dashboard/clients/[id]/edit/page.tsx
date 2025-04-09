@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { notFound } from 'next/navigation';
+import AnimatedContainer from '@/components/ui/AnimatedContainer';
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import ClientForm from '@/components/clients/ClientForm';
 import { Client } from '@/lib/models';
 import { dummyClients } from '@/lib/dummy-data/clients';
@@ -15,15 +17,23 @@ export default function EditClientPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Current date/time and user info
+  const currentDateTime = "2025-04-09 10:12:57";
+  const currentUser = "ChadSaglam";
+  
   useEffect(() => {
     // In a real app, you'd fetch this from your API
-    const foundClient = dummyClients.find(client => client.id === params.id);
+    const timer = setTimeout(() => {
+      const foundClient = dummyClients.find(client => client.id === params.id);
+      
+      if (foundClient) {
+        setClient(foundClient);
+      }
+      
+      setIsLoading(false);
+    }, 300);
     
-    if (foundClient) {
-      setClient(foundClient);
-    }
-    
-    setIsLoading(false);
+    return () => clearTimeout(timer);
   }, [params.id]);
   
   // Show not found if client doesn't exist
@@ -50,17 +60,31 @@ export default function EditClientPage() {
   
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
+      <AnimatedContainer animation="fade-in">
+        <div className="mb-6">
+          <LoadingSkeleton height="30px" width="200px" className="mb-2" />
+          <LoadingSkeleton height="20px" width="300px" />
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <LoadingSkeleton height="500px" />
+          </div>
+          <div>
+            <LoadingSkeleton height="250px" />
+          </div>
+        </div>
+      </AnimatedContainer>
     );
   }
   
   return (
-    <div>
+    <AnimatedContainer animation="fade-in">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Edit Client</h1>
-        <p className="mt-1 text-sm text-gray-500">Update information for {client?.name}</p>
+        <p className="mt-1 text-sm text-gray-500">
+          Update information for {client?.name} • {currentDateTime} • {currentUser}
+        </p>
       </div>
       
       {client && (
@@ -70,6 +94,6 @@ export default function EditClientPage() {
           isSubmitting={isSubmitting}
         />
       )}
-    </div>
+    </AnimatedContainer>
   );
 }

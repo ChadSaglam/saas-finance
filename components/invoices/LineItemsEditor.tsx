@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { LineItem } from '@/lib/models';
 import Button from '@/components/ui/Button';
 import LineItemsTable from './LineItemsTable';
@@ -18,11 +18,11 @@ const LineItemsEditor: React.FC<LineItemsEditorProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
-  // Find the item being edited
+  // Find the item being edited - memoize this for performance
   const editingItem = editingItemId ? items.find(item => item.id === editingItemId) : undefined;
 
   // Handle saving a line item (new or edited)
-  const handleSaveItem = (item: LineItem) => {
+  const handleSaveItem = useCallback((item: LineItem) => {
     let newItems: LineItem[];
     
     if (editingItemId) {
@@ -36,25 +36,25 @@ const LineItemsEditor: React.FC<LineItemsEditorProps> = ({
     }
     
     onChange(newItems);
-  };
+  }, [items, editingItemId, onChange]);
   
   // Handle deleting a line item
-  const handleDeleteItem = (id: string) => {
+  const handleDeleteItem = useCallback((id: string) => {
     const newItems = items.filter(item => item.id !== id);
     onChange(newItems);
-  };
+  }, [items, onChange]);
   
   // Handle editing a line item
-  const handleEditItem = (id: string) => {
+  const handleEditItem = useCallback((id: string) => {
     setEditingItemId(id);
     setIsAdding(false);
-  };
+  }, []);
   
   // Handle canceling add/edit
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setIsAdding(false);
     setEditingItemId(null);
-  };
+  }, []);
 
   return (
     <div className={className}>

@@ -2,12 +2,17 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import ClientForm from '@/components/clients/ClientForm';
 import { Client } from '@/lib/models';
 
 export default function CreateClientPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Current date/time and user info
+  const currentDateTime = "2025-04-09 10:12:57";
+  const currentUser = "ChadSaglam";
   
   const handleSubmit = async (client: Client) => {
     setIsSubmitting(true);
@@ -27,16 +32,18 @@ export default function CreateClientPage() {
   };
   
   return (
-    <div>
+    <AnimatedContainer animation="fade-in">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Create New Client</h1>
-        <p className="mt-1 text-sm text-gray-500">Add a new client to your database</p>
+        <p className="mt-1 text-sm text-gray-500">
+          Add a new client to your database • {currentDateTime} • {currentUser}
+        </p>
       </div>
       
       <ClientForm 
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
       />
-    </div>
+    </AnimatedContainer>
   );
 }
