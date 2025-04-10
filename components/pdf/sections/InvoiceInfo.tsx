@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text } from '@react-pdf/renderer';
-import { invoiceStyles } from '../styles/InvoiceStyles';
-import { getStatusStyles, getClientInfo } from '../utils/InvoiceUtils';
+import { invoiceStyles } from '@/lib/styles/InvoiceStyles';
+import { getStatusStyles, getClientInfo } from '@/lib/utils/InvoiceUtils';
 import { Invoice } from '@/lib/models';
 
 interface InvoiceInfoProps {

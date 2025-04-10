@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text } from '@react-pdf/renderer';
-import { invoiceStyles } from '../styles/InvoiceStyles';
+import { invoiceStyles } from '@/lib/styles/InvoiceStyles';
 import { formatCurrency } from '@/lib/utils/format';
 import { Invoice } from '@/lib/models';
 

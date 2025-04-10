@@ -1,7 +1,7 @@
 import React from 'react';
 import { Document, Page } from '@react-pdf/renderer';
 import { Invoice, CompanySettings } from '@/lib/models';
-import { invoiceStyles } from './styles/InvoiceStyles';
+import { invoiceStyles } from '@/lib/styles/InvoiceStyles';
 import { InvoiceHeader } from './sections/InvoiceHeader';
 import { InvoiceInfo } from './sections/InvoiceInfo';
 import { LineItemsTable } from './sections/LineItemsTable';

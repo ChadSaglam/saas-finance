@@ -16,6 +16,8 @@ import MonthlyRevenueChart from '@/components/charts/MonthlyRevenueChart';
 import InvoiceStatusChart from '@/components/charts/InvoiceStatusChart';
 import { calculateMonthlyRevenue, getRecentActivity } from '@/lib/utils/dashboard-utils';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
+import { useRequireAuth } from '@/lib/hooks/useRequireAuth';
+import { useAuth } from '@/lib/contexts/AuthContext';
 
 const CalendarWidget = () => (
   <Card>
@@ -91,7 +93,53 @@ const TopClients = () => (
   </Card>
 );
 
+// New security status component
+const SecurityStatusCard = () => {
+  const { user } = useAuth();
+  
+  return (
+    <Card>
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-medium text-gray-900">Security Status</h2>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            Protected
+          </span>
+        </div>
+        
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500">2FA Authentication:</span>
+            <span className="font-medium text-green-600">Enabled</span>
+          </div>
+          
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500">Last Login IP:</span>
+            <span className="font-medium">{user?.lastLoginIp || '192.168.1.1'}</span>
+          </div>
+          
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500">Login Email:</span>
+            <span className="font-medium truncate max-w-[180px]">{user?.email || 'test@example.com'}</span>
+          </div>
+        </div>
+        
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <Link href="/account/security" className="w-full block text-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors">
+            Security Settings
+          </Link>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
 export default function DashboardPage() {
+  // Add auth protection - will redirect if not authenticated
+  const { isAuthenticated, isTwoFactorVerified } = useRequireAuth();
+  // Get user info from auth context
+  const { user, logout } = useAuth();
+  
   const [isLoading, setIsLoading] = useState(true);
   const [summaryData, setSummaryData] = useState({
     totalClients: 0,
@@ -104,7 +152,6 @@ export default function DashboardPage() {
     conversionRate: 0
   });
   const [currentDate, setCurrentDate] = useState(new Date());
-  const userLogin = "ChadSaglam";
 
   useEffect(() => {
     setCurrentDate(new Date());
@@ -197,15 +244,35 @@ export default function DashboardPage() {
     day: 'numeric'
   });
 
+  // If auth check is in progress, show minimal loading UI
+  if (!isAuthenticated || !isTwoFactorVerified) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-t-blue-500 border-gray-200 rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verifying your authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Welcome back, {userLogin}</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Welcome back, {user?.name || user?.email?.split('@')[0] || 'User'}
+          </h1>
           <p className="mt-1 text-sm text-gray-500">Here's what's happening with your business today ({formattedDate})</p>
         </div>
-        <div className="mt-4 sm:mt-0">
+        <div className="mt-4 sm:mt-0 flex items-center space-x-2">
           <QuickActions />
+          <button
+            onClick={logout}
+            className="py-2 px-3 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Logout
+          </button>
         </div>
       </div>
       
@@ -271,6 +338,11 @@ export default function DashboardPage() {
         
         {/* Sidebar - Activity & Tasks */}
         <div className="space-y-6">
+          {/* Security Status Card - New Component */}
+          <Suspense fallback={<LoadingSkeleton height="180px" />}>
+            <SecurityStatusCard />
+          </Suspense>
+          
           {/* Activity Feed */}
           <Suspense fallback={<LoadingSkeleton height="300px" />}>
             <ActivityFeed activities={activityItems} />

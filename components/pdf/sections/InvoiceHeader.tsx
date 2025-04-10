@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image } from '@react-pdf/renderer';
-import { invoiceStyles } from '../styles/InvoiceStyles';
+import { invoiceStyles } from '@/lib/styles/InvoiceStyles';
 import { CompanySettings } from '@/lib/models';
 
 interface InvoiceHeaderProps {
