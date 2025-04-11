@@ -1,48 +1,131 @@
-interface LoginInfo {
-  timestamp: string;
-  ipAddress: string;
+import nodemailer from 'nodemailer';
+
+// Import from your templates file
+import { getVerificationEmailTemplate } from '@/lib/templates/email-templates';
+
+// Type definitions for better TypeScript support
+interface EmailOptions {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
 }
 
-export const sendVerificationEmail = async (email: string, code: string): Promise<boolean> => {
-  try {
-    console.log('--------- EMAIL SENT ---------');
-    console.log(`To: ${email}`);
-    console.log('Subject: Your verification code');
-    console.log('\nBody:');
-    console.log(`Your one-time verification code:\n${code}\n`);
-    console.log('This code expires after 5 minutes. If you did not request this, please change your password or contact MongoDB Support.');
-    console.log('-----------------------------');
-    
-    // In production, you would call your email API here
-    return true;
-  } catch (error) {
-    console.error('Failed to send verification email:', error);
-    return false;
+/**
+ * Email service for sending transactional emails
+ * Uses Nodemailer with SMTP configuration from environment variables
+ */
+class EmailService {
+  // Fix TypeScript error with definite assignment operator
+  private transporter!: nodemailer.Transporter;
+  private initialized: boolean = false;
+  
+  constructor() {
+    this.initialize();
   }
-};
+  
+  /**
+   * Initialize the SMTP transporter
+   * Called automatically on service creation
+   */
+  public initialize(): void {
+    try {
+      // Check for required configuration
+      if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+        console.warn('Email service not fully configured. Some features may not work.');
+        this.initialized = false;
+        return;
+      }
+      
+      // Create the transporter with environment configuration
+      this.transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASSWORD,
+        },
+      });
+      
+      // Verify connection in development
+      if (process.env.NODE_ENV === 'development') {
+        this.verifyConnection();
+      }
+      
+      this.initialized = true;
+    } catch (error) {
+      console.error('Failed to initialize email service:', error);
+      this.initialized = false;
+    }
+  }
+  
+  /**
+   * Verify the SMTP connection
+   */
+  private verifyConnection(): void {
+    this.transporter.verify((error) => {
+      if (error) {
+        console.error('SMTP connection error:', error);
+      } else {
+        console.log('SMTP server is ready to send emails');
+      }
+    });
+  }
+  
+  /**
+   * Send an email
+   * 
+   * @param options - Email options
+   * @returns Promise with sending result
+   */
+  public async sendEmail(options: EmailOptions): Promise<boolean> {
+    try {
+      if (!this.initialized) {
+        console.warn('Email service not initialized. Check your configuration.');
+        return false;
+      }
+      
+      // Send email
+      const info = await this.transporter.sendMail({
+        from: `"InvoicePro Security" <${process.env.SMTP_USER}>`,
+        to: options.to,
+        subject: options.subject,
+        text: options.text,
+        html: options.html,
+      });
+      
+      console.log('Email sent successfully:', info.messageId);
+      return true;
+    } catch (error) {
+      console.error('Failed to send email:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Send a verification code
+   * 
+   * @param to - Recipient email
+   * @param code - Verification code
+   * @param name - Recipient name
+   * @returns Promise with sending result
+   */
+  public async sendVerificationCode(to: string, code: string, name: string): Promise<boolean> {
+    const subject = 'Your InvoicePro Verification Code';
+    const text = `Hello ${name}, Your verification code is: ${code}. This code will expire in 10 minutes.`;
+    const html = getVerificationEmailTemplate(code, name);
+    
+    return this.sendEmail({
+      to,
+      subject,
+      text,
+      html
+    });
+  }
+}
 
-export const sendLoginNotification = async (email: string, loginInfo: LoginInfo): Promise<boolean> => {
-  try {
-    // Format date for display
-    const date = new Date(loginInfo.timestamp);
-    const formattedDate = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')} ${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')}:${String(date.getUTCSeconds()).padStart(2, '0')} GMT`;
-    
-    console.log('--------- EMAIL SENT ---------');
-    console.log(`To: ${email}`);
-    console.log('Subject: New sign-in to your account');
-    console.log('\nBody:');
-    console.log(`We're verifying a recent sign-in for ${email}:\n`);
-    console.log(`Timestamp:\t${formattedDate}`);
-    console.log(`IP Address:\t${loginInfo.ipAddress}`);
-    console.log('\nYou\'re receiving this message because of a successful sign-in from a device that we didn\'t recognize. If you believe that this sign-in is suspicious, please reset your password immediately.');
-    console.log('\nIf you\'re aware of this sign-in, please disregard this notice. This can happen when you use your browser\'s incognito or private browsing mode or clear your cookies.');
-    console.log('\nThanks,\n\nMongoDB Team');
-    console.log('-----------------------------');
-    
-    // In production, you would call your email API here
-    return true;
-  } catch (error) {
-    console.error('Failed to send login notification:', error);
-    return false;
-  }
-};
+// Create singleton instance for the application
+const emailService = new EmailService();
+
+export default emailService;

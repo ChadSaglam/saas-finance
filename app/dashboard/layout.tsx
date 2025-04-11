@@ -25,12 +25,6 @@ export default function DashboardLayout({
     // Only run on client and after auth loads
     if (!isClient || auth.isLoading) return;
     
-    console.log('[DASHBOARD LAYOUT] Auth state:', {
-      isAuthenticated: auth.isAuthenticated,
-      needsVerification: auth.needsVerification,
-      isTwoFactorVerified: auth.isTwoFactorVerified,
-    });
-    
     if (!auth.isAuthenticated) {
       safeRedirect(router, '/login');
       return;
